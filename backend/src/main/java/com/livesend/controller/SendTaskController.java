@@ -52,13 +52,16 @@ public class SendTaskController {
             List<Long> fileIds = (List<Long>) request.get("fileIds");
             
             @SuppressWarnings("unchecked")
+            List<Long> noteIds = (List<Long>) request.get("noteIds");
+            
+            @SuppressWarnings("unchecked")
             List<Long> contactIds = (List<Long>) request.get("contactIds");
             
             Integer countdownDays = ((Number) request.get("countdownDays")).intValue();
             Integer requiredCheckIns = ((Number) request.get("requiredCheckIns")).intValue();
 
             SendTask task = sendTaskService.createTask(
-                    userId, name, fileIds, contactIds, countdownDays, requiredCheckIns
+                    userId, name, fileIds, noteIds, contactIds, countdownDays, requiredCheckIns
             );
             return ApiResponse.success("任务创建成功", task);
         } catch (IllegalArgumentException e) {
@@ -79,6 +82,9 @@ public class SendTaskController {
             List<Long> fileIds = (List<Long>) request.get("fileIds");
             
             @SuppressWarnings("unchecked")
+            List<Long> noteIds = (List<Long>) request.get("noteIds");
+            
+            @SuppressWarnings("unchecked")
             List<Long> contactIds = (List<Long>) request.get("contactIds");
             
             Integer countdownDays = request.containsKey("countdownDays") 
@@ -87,7 +93,7 @@ public class SendTaskController {
                     ? ((Number) request.get("requiredCheckIns")).intValue() : null;
 
             SendTask task = sendTaskService.updateTask(
-                    id, name, fileIds, contactIds, countdownDays, requiredCheckIns
+                    id, name, fileIds, noteIds, contactIds, countdownDays, requiredCheckIns
             );
             return ApiResponse.success("任务更新成功", task);
         } catch (IllegalArgumentException e) {

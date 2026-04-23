@@ -2,6 +2,7 @@ package com.livesend.service;
 
 import com.livesend.entity.Contact;
 import com.livesend.entity.FileItem;
+import com.livesend.entity.Note;
 import com.livesend.entity.SendTask;
 import com.livesend.entity.User;
 import jakarta.activation.DataHandler;
@@ -11,6 +12,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.util.ByteArrayDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -18,6 +20,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 
@@ -31,6 +34,7 @@ public class EmailService {
         User user = task.getUser();
         List<Contact> contacts = task.getContacts();
         List<FileItem> files = task.getFiles();
+        List<Note> notes = task.getNotes();
 
         if (contacts.isEmpty()) {
             return;
@@ -56,6 +60,14 @@ public class EmailService {
             File file = new File(fileItem.getFilePath());
             if (file.exists()) {
                 helper.addAttachment(fileItem.getOriginalName(), file);
+            }
+        }
+
+        for (Note note : notes) {
+            if (note.getContent() != null && !note.getContent().isEmpty()) {
+                String noteContent = note.getTitle() + "\n\n" + note.getContent();
+                DataSource dataSource = new ByteArrayDataSource(noteContent.getBytes(StandardCharsets.UTF_8), "text/plain;charset=UTF-8");
+                helper.addAttachment(note.getTitle() + ".txt", dataSource);
             }
         }
 
@@ -95,6 +107,40 @@ public class EmailService {
 
     private String buildEmailContent(SendTask task) {
         User user = task.getUser();
+        List<Note> notes = task.getNotes();
+        List<FileItem> files = task.getFiles();
+        
+        StringBuilder notesHtml = new StringBuilder();
+        if (notes != null && !notes.isEmpty()) {
+            for (Note note : notes) {
+                notesHtml.append("""
+                        <div style="margin-bottom: 20px; padding: 20px; background-color: #FFF8E7; border-radius: 8px; border-left: 4px solid #FFB74D;">
+                            <h3 style="color: #F57C00; margin-top: 0; margin-bottom: 12px; font-size: 18px;">
+                                📝 %s
+                            </h3>
+                            <p style="color: #666; line-height: 1.8; margin: 0; white-space: pre-wrap;">
+                                %s
+                            </p>
+                        </div>
+                        """.formatted(
+                                note.getTitle(),
+                                note.getContent() != null ? escapeHtml(note.getContent()) : ""
+                        ));
+            }
+        }
+
+        boolean hasFiles = files != null && !files.isEmpty();
+        boolean hasNotes = notes != null && !notes.isEmpty();
+        
+        String messageText;
+        if (hasFiles && hasNotes) {
+            messageText = "有些话，有些文件，他/她想传递给你。请查看下面的笔记内容和邮件附件中的文件。";
+        } else if (hasNotes) {
+            messageText = "有些话，他/她想对你说。请查看下面的笔记内容，同时也在邮件附件中保存了这些文字。";
+        } else {
+            messageText = "有些文件，他/她想传递给你。请查看邮件附件中的内容。";
+        }
+
         return """
                 <!DOCTYPE html>
                 <html lang="zh-CN">
@@ -140,6 +186,16 @@ public class EmailService {
                             color: #999;
                             font-size: 14px;
                         }
+                        .notes-section {
+                            margin-top: 30px;
+                            padding-top: 20px;
+                            border-top: 1px solid #FFE4E9;
+                        }
+                        .notes-title {
+                            color: #FF6B9D;
+                            font-size: 18px;
+                            margin-bottom: 20px;
+                        }
                     </style>
                 </head>
                 <body>
@@ -151,17 +207,36 @@ public class EmailService {
                         <div class="content">
                             <p>亲爱的朋友，</p>
                             <p>这是一条来自 <strong>%s</strong> 的消息。</p>
-                            <p>有些话，有些文件，他/她想传递给你。请查看附件中的内容。</p>
-                            <p>每一份文件都承载着特别的意义，请好好珍惜。</p>
+                            <p>%s</p>
+                            <p>每一份心意都承载着特别的意义，请好好珍惜。</p>
                             <p>愿温暖与你同在。</p>
                         </div>
+                        %s
                         <div class="footer">
                             <p>— 由 Live Send 传递 —</p>
                         </div>
                     </div>
                 </body>
                 </html>
-                """.formatted(user.getUsername());
+                """.formatted(
+                user.getUsername(),
+                messageText,
+                hasNotes ? """
+                        <div class="notes-section">
+                            <div class="notes-title">📝 以下是他/她想对你说的话：</div>
+                            %s
+                        </div>
+                        """.formatted(notesHtml.toString()) : ""
+        );
+    }
+
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;");
     }
 
     public void sendTestEmail(User user, String toEmail) throws MessagingException {
