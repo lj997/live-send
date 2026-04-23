@@ -1,0 +1,92 @@
+# ============================================
+# 后端 (Java/Maven)
+# ============================================
+
+# 编译输出目录
+backend/target/
+backend/build/
+backend/out/
+
+# Maven
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# ============================================
+# 前端 (Vue/Node.js)
+# ============================================
+
+# 依赖目录
+frontend/node_modules/
+
+# 编译输出目录
+frontend/dist/
+frontend/build/
+
+# 本地配置文件
+frontend/.env.local
+frontend/.env.*.local
+
+# 日志
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# ============================================
+# IDE/编辑器配置文件 (可选，根据团队约定)
+# ============================================
+
+# VS Code
+.vscode/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# ============================================
+# 操作系统文件
+# ============================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+
+# ============================================
+# 其他
+# ============================================
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# 环境变量文件
+.env
