@@ -55,7 +55,7 @@
           <el-button type="primary" class="btn-primary" @click="saveEmailConfig" :loading="saving">
             保存配置
           </el-button>
-          <el-button @click="testEmail" :loading="testing">
+          <el-button @click="openTestEmailDialog" :loading="testing">
             发送测试邮件
           </el-button>
         </el-form-item>
@@ -154,7 +154,7 @@ const saveEmailConfig = async () => {
   }
 }
 
-const testEmail = () => {
+const openTestEmailDialog = () => {
   if (!emailForm.value.email || !emailForm.value.emailHost) {
     ElMessage.warning('请先保存邮箱配置')
     return
