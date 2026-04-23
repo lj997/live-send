@@ -33,6 +33,14 @@ public class SendTask {
     )
     private List<Contact> contacts = new ArrayList<>();
 
+    @ManyToMany
+    @JoinTable(
+        name = "task_notes",
+        joinColumns = @JoinColumn(name = "task_id"),
+        inverseJoinColumns = @JoinColumn(name = "note_id")
+    )
+    private List<Note> notes = new ArrayList<>();
+
     @Column(nullable = false)
     private Integer countdownDays;
 

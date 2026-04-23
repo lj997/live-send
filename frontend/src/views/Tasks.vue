@@ -21,7 +21,7 @@
           <el-select
             v-model="taskForm.fileIds"
             multiple
-            placeholder="请选择要发送的文件"
+            placeholder="请选择要发送的文件（可选）"
             style="width: 100%;"
           >
             <el-option
@@ -33,6 +33,28 @@
           </el-select>
           <p v-if="allFiles.length === 0" style="color: var(--text-muted); font-size: 12px; margin-top: 8px;">
             暂无文件，请先在「文件管理」中上传
+          </p>
+        </el-form-item>
+
+        <el-form-item label="选择笔记">
+          <el-select
+            v-model="taskForm.noteIds"
+            multiple
+            placeholder="请选择要发送的笔记（可选）"
+            style="width: 100%;"
+          >
+            <el-option
+              v-for="note in allNotes"
+              :key="note.id"
+              :label="note.title"
+              :value="note.id"
+            />
+          </el-select>
+          <p v-if="allNotes.length === 0" style="color: var(--text-muted); font-size: 12px; margin-top: 8px;">
+            暂无笔记，请先在「备忘录」中创建
+          </p>
+          <p style="color: var(--primary-color); font-size: 12px; margin-top: 8px;">
+            💡 提示：至少选择一个文件或一篇笔记
           </p>
         </el-form-item>
 
@@ -104,7 +126,7 @@
         </div>
 
         <div class="task-content">
-          <div class="task-section">
+          <div class="task-section" v-if="task.files.length > 0">
             <div class="section-title">
               <el-icon><Folder /></el-icon>
               发送文件 ({{ task.files.length }})
@@ -113,6 +135,19 @@
               <div v-for="file in task.files" :key="file.id" class="file-item-small">
                 <el-icon><Document /></el-icon>
                 <span>{{ file.originalName }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="task-section" v-if="task.notes && task.notes.length > 0">
+            <div class="section-title">
+              <el-icon><Notebook /></el-icon>
+              发送笔记 ({{ task.notes.length }})
+            </div>
+            <div class="note-list">
+              <div v-for="note in task.notes" :key="note.id" class="note-item-small">
+                <el-icon><Document /></el-icon>
+                <span>{{ note.title }}</span>
               </div>
             </div>
           </div>
@@ -196,6 +231,7 @@ const router = useRouter()
 
 const tasks = ref([])
 const allFiles = ref([])
+const allNotes = ref([])
 const allContacts = ref([])
 const showDialog = ref(false)
 const isEdit = ref(false)
@@ -204,6 +240,7 @@ const editingId = ref(null)
 const taskForm = ref({
   name: '',
   fileIds: [],
+  noteIds: [],
   contactIds: [],
   countdownDays: 7,
   requiredCheckIns: 3
@@ -211,13 +248,15 @@ const taskForm = ref({
 
 const loadData = async () => {
   try {
-    const [tasksRes, filesRes, contactsRes] = await Promise.all([
+    const [tasksRes, filesRes, notesRes, contactsRes] = await Promise.all([
       api.tasks.getAll(),
       api.files.getAll(),
+      api.notes.getAll(),
       api.contacts.getAll()
     ])
     tasks.value = tasksRes.data || []
     allFiles.value = filesRes.data || []
+    allNotes.value = notesRes.data || []
     allContacts.value = contactsRes.data || []
   } catch (e) {
     console.error('加载数据失败', e)
@@ -230,6 +269,7 @@ const createTask = () => {
   taskForm.value = {
     name: '',
     fileIds: [],
+    noteIds: [],
     contactIds: [],
     countdownDays: 7,
     requiredCheckIns: 3
@@ -243,6 +283,7 @@ const editTask = (task) => {
   taskForm.value = {
     name: task.name,
     fileIds: task.files.map(f => f.id),
+    noteIds: task.notes ? task.notes.map(n => n.id) : [],
     contactIds: task.contacts.map(c => c.id),
     countdownDays: task.countdownDays,
     requiredCheckIns: task.requiredCheckIns
@@ -255,8 +296,8 @@ const saveTask = async () => {
     ElMessage.warning('请输入任务名称')
     return
   }
-  if (taskForm.value.fileIds.length === 0) {
-    ElMessage.warning('请至少选择一个文件')
+  if (taskForm.value.fileIds.length === 0 && taskForm.value.noteIds.length === 0) {
+    ElMessage.warning('请至少选择一个文件或一篇笔记')
     return
   }
   if (taskForm.value.contactIds.length === 0) {
@@ -398,13 +439,13 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.file-list, .contact-list {
+.file-list, .contact-list, .note-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.file-item-small, .contact-item-small {
+.file-item-small, .contact-item-small, .note-item-small {
   display: flex;
   align-items: center;
   gap: 6px;

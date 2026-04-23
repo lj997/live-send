@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,9 @@ public class SendTaskService {
     private ContactRepository contactRepository;
 
     @Autowired
+    private NoteRepository noteRepository;
+
+    @Autowired
     private CheckInRecordRepository checkInRecordRepository;
 
     public List<SendTask> getTasksByUser(Long userId) {
@@ -42,8 +46,8 @@ public class SendTaskService {
 
     @Transactional
     public SendTask createTask(Long userId, String name, List<Long> fileIds, 
-                                List<Long> contactIds, Integer countdownDays, 
-                                Integer requiredCheckIns) {
+                                List<Long> noteIds, List<Long> contactIds, 
+                                Integer countdownDays, Integer requiredCheckIns) {
         if (requiredCheckIns > countdownDays) {
             throw new IllegalArgumentException("签到次数不能大于倒计时天数");
         }
@@ -51,11 +55,12 @@ public class SendTaskService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
-        List<FileItem> files = fileItemRepository.findAllById(fileIds);
+        List<FileItem> files = fileIds != null ? fileItemRepository.findAllById(fileIds) : new ArrayList<>();
+        List<Note> notes = noteIds != null ? noteRepository.findAllById(noteIds) : new ArrayList<>();
         List<Contact> contacts = contactRepository.findAllById(contactIds);
 
-        if (files.isEmpty()) {
-            throw new RuntimeException("请至少选择一个文件");
+        if (files.isEmpty() && notes.isEmpty()) {
+            throw new RuntimeException("请至少选择一个文件或一篇笔记");
         }
         if (contacts.isEmpty()) {
             throw new RuntimeException("请至少选择一个联系人");
@@ -64,6 +69,7 @@ public class SendTaskService {
         SendTask task = new SendTask();
         task.setName(name);
         task.setFiles(files);
+        task.setNotes(notes);
         task.setContacts(contacts);
         task.setCountdownDays(countdownDays);
         task.setRequiredCheckIns(requiredCheckIns);
@@ -78,8 +84,8 @@ public class SendTaskService {
 
     @Transactional
     public SendTask updateTask(Long taskId, String name, List<Long> fileIds,
-                                List<Long> contactIds, Integer countdownDays,
-                                Integer requiredCheckIns) {
+                                List<Long> noteIds, List<Long> contactIds, 
+                                Integer countdownDays, Integer requiredCheckIns) {
         SendTask task = sendTaskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("任务不存在"));
 
@@ -93,9 +99,13 @@ public class SendTaskService {
         }
         if (fileIds != null) {
             List<FileItem> files = fileItemRepository.findAllById(fileIds);
-            if (!files.isEmpty()) {
+            if (!files.isEmpty() || (task.getNotes() != null && !task.getNotes().isEmpty())) {
                 task.setFiles(files);
             }
+        }
+        if (noteIds != null) {
+            List<Note> notes = noteRepository.findAllById(noteIds);
+            task.setNotes(notes);
         }
         if (contactIds != null) {
             List<Contact> contacts = contactRepository.findAllById(contactIds);
