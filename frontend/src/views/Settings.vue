@@ -43,7 +43,7 @@
           <el-input
             v-model="emailForm.emailPassword"
             type="password"
-            placeholder="请输入密码或应用专用密码"
+            :placeholder="hasEmailPassword ? '已保存，如需修改请重新输入' : '请输入密码或应用专用密码'"
             show-password
           />
           <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
@@ -116,6 +116,7 @@ const testing = ref(false)
 const showTestEmailDialog = ref(false)
 const testEmail = ref('')
 const user = ref(null)
+const hasEmailPassword = ref(false)
 
 const loadUser = async () => {
   try {
@@ -126,7 +127,8 @@ const loadUser = async () => {
       emailForm.value.emailHost = user.value.emailHost || ''
       emailForm.value.emailPort = user.value.emailPort || 587
       emailForm.value.emailUsername = user.value.emailUsername || ''
-      emailForm.value.emailPassword = user.value.emailPassword || ''
+      emailForm.value.emailPassword = ''
+      hasEmailPassword.value = user.value.hasEmailPassword || false
     }
   } catch (e) {
     console.error('加载用户信息失败', e)

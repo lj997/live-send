@@ -18,17 +18,32 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 @Service
 public class EmailService {
 
+    private static final String SEND_TASK_TEMPLATE = "email/send-task-template";
+    private static final String TEST_TEMPLATE = "email/test-email-template";
+
     @Autowired
     private JavaMailSender javaMailSender;
+
+    @Autowired
+    private TemplateEngine templateEngine;
+
+    @Autowired
+    private EncryptionService encryptionService;
 
     public void sendEmailWithAttachments(SendTask task) throws MessagingException {
         User user = task.getUser();
@@ -36,7 +51,7 @@ public class EmailService {
         List<FileItem> files = task.getFiles();
         List<Note> notes = task.getNotes();
 
-        if (contacts.isEmpty()) {
+        if (contacts == null || contacts.isEmpty()) {
             return;
         }
 
@@ -53,7 +68,7 @@ public class EmailService {
 
         helper.setSubject("来自 " + user.getUsername() + " 的重要消息");
 
-        String htmlContent = buildEmailContent(task);
+        String htmlContent = renderSendTaskTemplate(user, notes, files, contacts);
         helper.setText(htmlContent, true);
 
         for (FileItem fileItem : files) {
@@ -74,6 +89,68 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    public void sendTestEmail(User user, String toEmail) throws MessagingException {
+        JavaMailSender mailSender = createMailSender(user);
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom(user.getEmail());
+        helper.setTo(toEmail);
+        helper.setSubject("Live Send 测试邮件");
+
+        String htmlContent = renderTestTemplate();
+        helper.setText(htmlContent, true);
+
+        mailSender.send(message);
+    }
+
+    private String renderSendTaskTemplate(User user, List<Note> notes, List<FileItem> files, List<Contact> contacts) {
+        Context context = new Context(Locale.CHINESE);
+        
+        List<Map<String, Object>> notesData = null;
+        if (notes != null && !notes.isEmpty()) {
+            notesData = notes.stream()
+                    .map(note -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("title", note.getTitle());
+                        map.put("content", escapeHtml(note.getContent()));
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+        }
+        
+        List<String> fileNames = null;
+        if (files != null && !files.isEmpty()) {
+            fileNames = files.stream()
+                    .map(FileItem::getOriginalName)
+                    .collect(Collectors.toList());
+        }
+        
+        List<Map<String, Object>> contactsData = null;
+        if (contacts != null && !contacts.isEmpty()) {
+            contactsData = contacts.stream()
+                    .map(contact -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("name", contact.getName());
+                        map.put("email", contact.getEmail());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+        }
+        
+        context.setVariable("senderName", user.getUsername());
+        context.setVariable("notes", notesData);
+        context.setVariable("fileNames", fileNames);
+        context.setVariable("contacts", contactsData);
+        
+        return templateEngine.process(SEND_TASK_TEMPLATE, context);
+    }
+
+    private String renderTestTemplate() {
+        Context context = new Context(Locale.CHINESE);
+        return templateEngine.process(TEST_TEMPLATE, context);
+    }
+
     private JavaMailSender createMailSender(User user) {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         
@@ -81,6 +158,12 @@ public class EmailService {
         Integer port = user.getEmailPort();
         String username = user.getEmailUsername();
         String password = user.getEmailPassword();
+
+        if (password != null && !password.isEmpty()) {
+            if (encryptionService.isEncrypted(password)) {
+                password = encryptionService.decrypt(password);
+            }
+        }
 
         if (host != null && !host.isEmpty()) {
             mailSender.setHost(host);
@@ -105,131 +188,6 @@ public class EmailService {
         return mailSender;
     }
 
-    private String buildEmailContent(SendTask task) {
-        User user = task.getUser();
-        List<Note> notes = task.getNotes();
-        List<FileItem> files = task.getFiles();
-        
-        StringBuilder notesHtml = new StringBuilder();
-        if (notes != null && !notes.isEmpty()) {
-            for (Note note : notes) {
-                notesHtml.append("""
-                        <div style="margin-bottom: 20px; padding: 20px; background-color: #FFF8E7; border-radius: 8px; border-left: 4px solid #FFB74D;">
-                            <h3 style="color: #F57C00; margin-top: 0; margin-bottom: 12px; font-size: 18px;">
-                                📝 %s
-                            </h3>
-                            <p style="color: #666; line-height: 1.8; margin: 0; white-space: pre-wrap;">
-                                %s
-                            </p>
-                        </div>
-                        """.formatted(
-                                note.getTitle(),
-                                note.getContent() != null ? escapeHtml(note.getContent()) : ""
-                        ));
-            }
-        }
-
-        boolean hasFiles = files != null && !files.isEmpty();
-        boolean hasNotes = notes != null && !notes.isEmpty();
-        
-        String messageText;
-        if (hasFiles && hasNotes) {
-            messageText = "有些话，有些文件，他/她想传递给你。请查看下面的笔记内容和邮件附件中的文件。";
-        } else if (hasNotes) {
-            messageText = "有些话，他/她想对你说。请查看下面的笔记内容，同时也在邮件附件中保存了这些文字。";
-        } else {
-            messageText = "有些文件，他/她想传递给你。请查看邮件附件中的内容。";
-        }
-
-        return """
-                <!DOCTYPE html>
-                <html lang="zh-CN">
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body {
-                            font-family: 'Microsoft YaHei', sans-serif;
-                            background-color: #FFF5F5;
-                            margin: 0;
-                            padding: 20px;
-                        }
-                        .container {
-                            max-width: 600px;
-                            margin: 0 auto;
-                            background-color: white;
-                            border-radius: 16px;
-                            padding: 40px;
-                            box-shadow: 0 4px 20px rgba(255, 182, 193, 0.3);
-                        }
-                        .header {
-                            text-align: center;
-                            margin-bottom: 30px;
-                        }
-                        .heart {
-                            font-size: 48px;
-                            color: #FF6B9D;
-                        }
-                        h1 {
-                            color: #FF6B9D;
-                            margin: 20px 0;
-                        }
-                        .content {
-                            color: #666;
-                            line-height: 1.8;
-                            font-size: 16px;
-                        }
-                        .footer {
-                            text-align: center;
-                            margin-top: 40px;
-                            padding-top: 20px;
-                            border-top: 1px solid #FFE4E9;
-                            color: #999;
-                            font-size: 14px;
-                        }
-                        .notes-section {
-                            margin-top: 30px;
-                            padding-top: 20px;
-                            border-top: 1px solid #FFE4E9;
-                        }
-                        .notes-title {
-                            color: #FF6B9D;
-                            font-size: 18px;
-                            margin-bottom: 20px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <div class="heart">💝</div>
-                            <h1>来自远方的问候</h1>
-                        </div>
-                        <div class="content">
-                            <p>亲爱的朋友，</p>
-                            <p>这是一条来自 <strong>%s</strong> 的消息。</p>
-                            <p>%s</p>
-                            <p>每一份心意都承载着特别的意义，请好好珍惜。</p>
-                            <p>愿温暖与你同在。</p>
-                        </div>
-                        %s
-                        <div class="footer">
-                            <p>— 由 Live Send 传递 —</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """.formatted(
-                user.getUsername(),
-                messageText,
-                hasNotes ? """
-                        <div class="notes-section">
-                            <div class="notes-title">📝 以下是他/她想对你说的话：</div>
-                            %s
-                        </div>
-                        """.formatted(notesHtml.toString()) : ""
-        );
-    }
-
     private String escapeHtml(String text) {
         if (text == null) return "";
         return text.replace("&", "&amp;")
@@ -237,72 +195,5 @@ public class EmailService {
                    .replace(">", "&gt;")
                    .replace("\"", "&quot;")
                    .replace("'", "&#39;");
-    }
-
-    public void sendTestEmail(User user, String toEmail) throws MessagingException {
-        JavaMailSender mailSender = createMailSender(user);
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-        helper.setFrom(user.getEmail());
-        helper.setTo(toEmail);
-        helper.setSubject("Live Send 测试邮件");
-
-        String htmlContent = """
-                <!DOCTYPE html>
-                <html lang="zh-CN">
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body {
-                            font-family: 'Microsoft YaHei', sans-serif;
-                            background-color: #FFF5F5;
-                            margin: 0;
-                            padding: 20px;
-                        }
-                        .container {
-                            max-width: 600px;
-                            margin: 0 auto;
-                            background-color: white;
-                            border-radius: 16px;
-                            padding: 40px;
-                            box-shadow: 0 4px 20px rgba(255, 182, 193, 0.3);
-                        }
-                        .header {
-                            text-align: center;
-                            margin-bottom: 30px;
-                        }
-                        .heart {
-                            font-size: 48px;
-                            color: #FF6B9D;
-                        }
-                        h1 {
-                            color: #FF6B9D;
-                            margin: 20px 0;
-                        }
-                        .content {
-                            color: #666;
-                            line-height: 1.8;
-                            font-size: 16px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <div class="heart">💌</div>
-                            <h1>测试成功！</h1>
-                        </div>
-                        <div class="content">
-                            <p>恭喜！你的邮箱配置已成功验证。</p>
-                            <p>你现在可以开始创建发送任务，在需要的时候传递你的爱与记忆。</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """;
-        helper.setText(htmlContent, true);
-
-        mailSender.send(message);
     }
 }

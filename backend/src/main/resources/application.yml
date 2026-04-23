@@ -35,10 +35,20 @@ spring:
           auth: true
           starttls:
             enable: true
+            
+  security:
+    filter:
+      order: -100
 
 file:
   upload:
     path: ./uploads/
+    max-size: 52428800
+    allow-all: false
+
+app:
+  encryption:
+    key: LiveSend-Secret-Key-2024-For-Sensitive-Data-Protection-Please-Change-In-Production
 
 logging:
   level:

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            background-color: #FFF5F5;
+            padding: 20px;
+            line-height: 1.8;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(255, 182, 193, 0.3);
+        }
+        
+        .email-header {
+            background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .email-header .heart-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .email-header h1 {
+            color: #FFFFFF;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .email-body {
+            padding: 40px 30px;
+            color: #555555;
+        }
+        
+        .success-badge {
+            display: inline-block;
+            background-color: #E8F5E9;
+            color: #2E7D32;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #666666;
+        }
+        
+        .intro-text {
+            margin-bottom: 30px;
+            font-size: 15px;
+            line-height: 2;
+        }
+        
+        .features-section {
+            background-color: #F8F9FA;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .features-title {
+            color: #FF6B9D;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .feature-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .feature-icon {
+            width: 32px;
+            height: 32px;
+            background-color: #FFE4E9;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+            font-size: 16px;
+        }
+        
+        .feature-text {
+            flex: 1;
+            font-size: 14px;
+            color: #666666;
+            line-height: 1.6;
+        }
+        
+        .feature-text strong {
+            color: #333333;
+        }
+        
+        .footer-note {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #FFE4E9;
+            color: #999999;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .email-footer {
+            background-color: #FFF5F5;
+            padding: 25px 30px;
+            text-align: center;
+        }
+        
+        .email-footer .footer-text {
+            color: #FF6B9D;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .email-footer .footer-subtext {
+            color: #999999;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        @media screen and (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .email-header {
+                padding: 30px 20px;
+            }
+            
+            .email-body {
+                padding: 30px 20px;
+            }
+            
+            .email-header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="heart-icon">💌</div>
+            <h1>Live Send 测试邮件</h1>
+        </div>
+        
+        <div class="email-body">
+            <div class="success-badge">✓ 配置验证成功</div>
+            
+            <p class="greeting">亲爱的用户，</p>
+            
+            <p class="intro-text">
+                恭喜！你的邮箱配置已成功验证。这意味着你现在可以通过 Live Send 发送邮件了。
+            </p>
+            
+            <div class="features-section">
+                <div class="features-title">你可以用 Live Send 做什么？</div>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <div class="feature-icon">📁</div>
+                        <div class="feature-text">
+                            <strong>发送文件</strong><br>
+                            上传各种类型的文件，在需要时传递给指定的人
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">📝</div>
+                        <div class="feature-text">
+                            <strong>撰写笔记</strong><br>
+                            记录想说的话，与文件一起发送
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">👥</div>
+                        <div class="feature-text">
+                            <strong>添加联系人</strong><br>
+                            管理你想要传递心意的人
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">⏰</div>
+                        <div class="feature-text">
+                            <strong>设置倒计时</strong><br>
+                            创建发送任务，设置签到机制和倒计时
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">📨</div>
+                        <div class="feature-text">
+                            <strong>立即发送</strong><br>
+                            也可以选择立即发送，不需要等待倒计时
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <p class="intro-text">
+                现在就去创建你的第一个发送任务吧！让爱与记忆永远传递。
+            </p>
+            
+            <div class="footer-note">
+                💡 这是一封测试邮件，仅用于验证你的邮箱配置是否正常工作
+            </div>
+        </div>
+        
+        <div class="email-footer">
+            <div class="footer-text">愿温暖与你同在 💕</div>
+            <div class="footer-subtext">— 由 Live Send 传递 —</div>
+        </div>
+    </div>
+</body>
+</html>

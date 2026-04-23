@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            background-color: #FFF5F5;
+            padding: 20px;
+            line-height: 1.8;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(255, 182, 193, 0.3);
+        }
+        
+        .email-header {
+            background: linear-gradient(135deg, #FF6B9D 0%, #FF8E8E 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .email-header .heart-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .email-header h1 {
+            color: #FFFFFF;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .email-body {
+            padding: 40px 30px;
+            color: #555555;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #666666;
+        }
+        
+        .greeting .sender-name {
+            color: #FF6B9D;
+            font-weight: 600;
+        }
+        
+        .intro-text {
+            margin-bottom: 25px;
+            font-size: 15px;
+        }
+        
+        .section-title {
+            color: #FF6B9D;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #FFE4E9;
+        }
+        
+        .section-title .icon {
+            margin-right: 8px;
+        }
+        
+        .notes-section {
+            margin-top: 10px;
+        }
+        
+        .note-card {
+            background-color: #FFF8E7;
+            border-left: 4px solid #FFB74D;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .note-card .note-title {
+            color: #F57C00;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .note-card .note-content {
+            color: #666666;
+            font-size: 14px;
+            line-height: 2;
+            white-space: pre-wrap;
+        }
+        
+        .attachments-section {
+            margin-top: 10px;
+        }
+        
+        .attachment-list {
+            list-style: none;
+        }
+        
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #F8F9FA;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #E9ECEF;
+        }
+        
+        .attachment-item .file-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #E3F2FD;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 18px;
+        }
+        
+        .attachment-item .file-info {
+            flex: 1;
+        }
+        
+        .attachment-item .file-name {
+            color: #333333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .attachment-item .file-size {
+            color: #999999;
+            font-size: 12px;
+        }
+        
+        .contacts-section {
+            margin-top: 10px;
+        }
+        
+        .contact-list {
+            list-style: none;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #F0FFF4;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .contact-item .contact-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: #FFFFFF;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .contact-item .contact-info {
+            flex: 1;
+        }
+        
+        .contact-item .contact-name {
+            color: #333333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .contact-item .contact-email {
+            color: #999999;
+            font-size: 12px;
+        }
+        
+        .footer-note {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #FFE4E9;
+            color: #999999;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .email-footer {
+            background-color: #FFF5F5;
+            padding: 25px 30px;
+            text-align: center;
+        }
+        
+        .email-footer .footer-text {
+            color: #FF6B9D;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .email-footer .footer-subtext {
+            color: #999999;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .empty-section {
+            color: #999999;
+            font-size: 14px;
+            font-style: italic;
+        }
+        
+        @media screen and (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .email-header {
+                padding: 30px 20px;
+            }
+            
+            .email-body {
+                padding: 30px 20px;
+            }
+            
+            .email-header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="heart-icon">💝</div>
+            <h1>来自远方的问候</h1>
+        </div>
+        
+        <div class="email-body">
+            <p class="greeting">
+                亲爱的朋友，<br>
+                这是一条来自 <span class="sender-name" th:text="${senderName}">某人</span> 的消息。
+            </p>
+            
+            <p class="intro-text">
+                有些话，有些文件，他/她想传递给你。每一份心意都承载着特别的意义，请好好珍惜。
+            </p>
+            
+            <div th:if="${notes != null and !notes.isEmpty()}">
+                <div class="section-title">
+                    <span class="icon">📝</span>他/她想对你说的话
+                </div>
+                <div class="notes-section">
+                    <div th:each="note : ${notes}" class="note-card">
+                        <div class="note-title" th:text="${note.title}">笔记标题</div>
+                        <div class="note-content" th:text="${note.content}">笔记内容</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div th:if="${fileNames != null and !fileNames.isEmpty()}">
+                <div class="section-title">
+                    <span class="icon">📎</span>他/她为你准备的文件
+                </div>
+                <div class="attachments-section">
+                    <ul class="attachment-list">
+                        <li th:each="fileName : ${fileNames}" class="attachment-item">
+                            <div class="file-icon">📄</div>
+                            <div class="file-info">
+                                <div class="file-name" th:text="${fileName}">文件名.pdf</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div th:if="${contacts != null and !contacts.isEmpty()}">
+                <div class="section-title">
+                    <span class="icon">👥</span>同时收到这份心意的人
+                </div>
+                <div class="contacts-section">
+                    <ul class="contact-list">
+                        <li th:each="contact : ${contacts}" class="contact-item">
+                            <div class="contact-avatar" th:text="${#strings.substring(contact.name, 0, 1)}">张</div>
+                            <div class="contact-info">
+                                <div class="contact-name" th:text="${contact.name}">张三</div>
+                                <div class="contact-email" th:text="${contact.email}">example@email.com</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-note">
+                💡 提示：请查看邮件附件获取完整的文件内容
+            </div>
+        </div>
+        
+        <div class="email-footer">
+            <div class="footer-text">愿温暖与你同在 💕</div>
+            <div class="footer-subtext">— 由 Live Send 传递 —</div>
+        </div>
+    </div>
+</body>
+</html>

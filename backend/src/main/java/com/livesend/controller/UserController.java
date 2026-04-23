@@ -1,6 +1,7 @@
 package com.livesend.controller;
 
 import com.livesend.dto.ApiResponse;
+import com.livesend.dto.UserDTO;
 import com.livesend.entity.User;
 import com.livesend.service.EmailService;
 import com.livesend.service.UserService;
@@ -20,18 +21,18 @@ public class UserController {
     private EmailService emailService;
 
     @GetMapping("/current")
-    public ApiResponse<User> getCurrentUser() {
+    public ApiResponse<UserDTO> getCurrentUser() {
         User user = userService.getDefaultUser();
-        return ApiResponse.success(user);
+        return ApiResponse.success(UserDTO.fromEntity(user));
     }
 
     @PutMapping("/{id}/email-config")
-    public ApiResponse<User> updateEmailConfig(
+    public ApiResponse<UserDTO> updateEmailConfig(
             @PathVariable Long id,
             @RequestBody User updatedUser) {
         try {
             User user = userService.updateEmailConfig(id, updatedUser);
-            return ApiResponse.success("邮箱配置更新成功", user);
+            return ApiResponse.success("邮箱配置更新成功", UserDTO.fromEntity(user));
         } catch (Exception e) {
             return ApiResponse.error(e.getMessage());
         }
