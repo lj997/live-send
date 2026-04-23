@@ -29,9 +29,9 @@
 
         <el-form-item label="端口">
           <el-select v-model="emailForm.emailPort" placeholder="选择端口" style="width: 200px;">
-            <el-option :label="587 (推荐)" :value="587" />
-            <el-option :label="465" :value="465" />
-            <el-option :label="25" :value="25" />
+            <el-option label="587 (推荐)" :value="587" />
+            <el-option label="465" :value="465" />
+            <el-option label="25" :value="25" />
           </el-select>
         </el-form-item>
 
