@@ -164,8 +164,7 @@ public class SendTaskService {
         sendTaskRepository.save(task);
     }
 
-    @Transactional
-    public void sendNow(Long taskId) {
+    public SendTask validateAndGetTaskForSend(Long taskId) {
         SendTask task = sendTaskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("任务不存在"));
         
@@ -175,13 +174,24 @@ public class SendTaskService {
         if (task.getStatus() == SendTask.TaskStatus.CANCELLED) {
             throw new RuntimeException("该任务已取消，无法发送");
         }
+        
+        return task;
+    }
 
+    @Async
+    @Transactional
+    public void sendTaskAsync(Long taskId) {
         try {
+            SendTask task = sendTaskRepository.findById(taskId).orElse(null);
+            if (task == null) {
+                return;
+            }
+            
             emailService.sendEmailWithAttachments(task);
             task.setStatus(SendTask.TaskStatus.COMPLETED);
             sendTaskRepository.save(task);
         } catch (Exception e) {
-            throw new RuntimeException("邮件发送失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

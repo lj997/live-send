@@ -136,8 +136,9 @@ public class SendTaskController {
     @PostMapping("/{id}/send-now")
     public ApiResponse<Void> sendNow(@PathVariable Long id) {
         try {
-            sendTaskService.sendNow(id);
-            return ApiResponse.success("邮件已发送", null);
+            sendTaskService.validateAndGetTaskForSend(id);
+            sendTaskService.sendTaskAsync(id);
+            return ApiResponse.success("发送请求已提交，正在后台发送中...", null);
         } catch (Exception e) {
             return ApiResponse.error("发送失败: " + e.getMessage());
         }

@@ -183,37 +183,37 @@
 
         <div class="task-actions-bar">
           <template v-if="task.status === 'ACTIVE'">
-            <el-button size="small" @click="goToCheckIn(task)">
+            <el-button size="small" @click="goToCheckIn(task)" :disabled="isSending(task.id)">
               <el-icon><CircleCheck /></el-icon>
               签到
             </el-button>
-            <el-button size="small" @click="editTask(task)">
+            <el-button size="small" @click="editTask(task)" :disabled="isSending(task.id)">
               <el-icon><Edit /></el-icon>
               编辑
             </el-button>
-            <el-button size="small" @click="pauseTask(task)">
+            <el-button size="small" @click="pauseTask(task)" :disabled="isSending(task.id)">
               <el-icon><VideoPause /></el-icon>
               暂停
             </el-button>
-            <el-button size="small" type="warning" @click="sendTaskNow(task)">
+            <el-button size="small" type="warning" @click="sendTaskNow(task)" :loading="isSending(task.id)">
               <el-icon><Promotion /></el-icon>
               立即发送
             </el-button>
-            <el-button size="small" type="danger" @click="cancelTask(task)">
+            <el-button size="small" type="danger" @click="cancelTask(task)" :disabled="isSending(task.id)">
               <el-icon><Close /></el-icon>
               取消
             </el-button>
           </template>
           <template v-else-if="task.status === 'PAUSED'">
-            <el-button size="small" type="primary" @click="resumeTask(task)">
+            <el-button size="small" type="primary" @click="resumeTask(task)" :disabled="isSending(task.id)">
               <el-icon><VideoPlay /></el-icon>
               恢复
             </el-button>
-            <el-button size="small" type="warning" @click="sendTaskNow(task)">
+            <el-button size="small" type="warning" @click="sendTaskNow(task)" :loading="isSending(task.id)">
               <el-icon><Promotion /></el-icon>
               立即发送
             </el-button>
-            <el-button size="small" type="danger" @click="cancelTask(task)">
+            <el-button size="small" type="danger" @click="cancelTask(task)" :disabled="isSending(task.id)">
               <el-icon><Close /></el-icon>
               取消
             </el-button>
@@ -253,6 +253,12 @@ const taskForm = ref({
   countdownDays: 7,
   requiredCheckIns: 3
 })
+
+const sendingTaskIds = ref(new Set())
+
+const isSending = (taskId) => {
+  return sendingTaskIds.value.has(taskId)
+}
 
 const loadData = async () => {
   try {
@@ -408,8 +414,8 @@ const sendTaskNow = async (task) => {
             <li><strong>发送内容:</strong> ${totalItems} 项（${task.files?.length || 0} 个文件，${task.notes?.length || 0} 篇笔记）</li>
             <li><strong>收件人:</strong> ${task.contacts?.length || 0} 位联系人</li>
           </ul>
-          <p style="margin-top: 12px; color: #E6A23C; font-size: 13px;">
-            💡 此操作不可撤销，邮件发送后任务将标记为"已完成"
+          <p style="margin-top: 12px; color: #67C23A; font-size: 13px;">
+            💡 点击确认后，发送将在后台进行，您可以继续操作
           </p>
         </div>
       `,
@@ -423,17 +429,23 @@ const sendTaskNow = async (task) => {
       }
     )
     
+    sendingTaskIds.value.add(task.id)
+    
     try {
       await api.tasks.sendNow(task.id)
-      ElMessage.success({
-        message: '邮件发送成功！任务已完成 💝',
-        type: 'success',
+      
+      ElMessage({
+        message: '发送请求已提交，正在后台发送中... �',
+        type: 'info',
         duration: 3000
       })
-      loadData()
+      
+      await checkTaskStatus(task.id)
+      
     } catch (e) {
+      sendingTaskIds.value.delete(task.id)
       if (e.message !== 'cancel') {
-        ElMessage.error('发送失败，请稍后重试')
+        ElMessage.error('发送请求失败，请稍后重试')
       }
     }
   } catch (e) {
@@ -441,6 +453,47 @@ const sendTaskNow = async (task) => {
       console.error(e)
     }
   }
+}
+
+const checkTaskStatus = async (taskId) => {
+  const maxAttempts = 30
+  let attempts = 0
+  
+  const check = async () => {
+    attempts++
+    try {
+      const res = await api.tasks.getById(taskId)
+      const task = res.data
+      
+      if (task && task.status === 'COMPLETED') {
+        sendingTaskIds.value.delete(taskId)
+        ElMessage.success({
+          message: '邮件发送成功！任务已完成 💝',
+          type: 'success',
+          duration: 3000
+        })
+        loadData()
+        return
+      }
+      
+      if (attempts < maxAttempts) {
+        setTimeout(check, 2000)
+      } else {
+        sendingTaskIds.value.delete(taskId)
+        ElMessage({
+          message: '发送仍在后台进行中，请稍后刷新页面查看状态 📨',
+          type: 'info',
+          duration: 5000
+        })
+        loadData()
+      }
+    } catch (e) {
+      sendingTaskIds.value.delete(taskId)
+      console.error('检查任务状态失败', e)
+    }
+  }
+  
+  setTimeout(check, 3000)
 }
 
 const formatTime = (time) => {
