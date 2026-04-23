@@ -14,9 +14,37 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    private final Object lock = new Object();
+    private volatile User cachedDefaultUser = null;
+
     public User getDefaultUser() {
-        return userRepository.findByUsername("default")
-                .orElseGet(() -> createDefaultUser());
+        if (cachedDefaultUser != null) {
+            return cachedDefaultUser;
+        }
+
+        synchronized (lock) {
+            if (cachedDefaultUser != null) {
+                return cachedDefaultUser;
+            }
+
+            Optional<User> existing = userRepository.findByUsername("default");
+            if (existing.isPresent()) {
+                cachedDefaultUser = existing.get();
+                return cachedDefaultUser;
+            }
+
+            try {
+                cachedDefaultUser = createDefaultUser();
+                return cachedDefaultUser;
+            } catch (Exception e) {
+                existing = userRepository.findByUsername("default");
+                if (existing.isPresent()) {
+                    cachedDefaultUser = existing.get();
+                    return cachedDefaultUser;
+                }
+                throw e;
+            }
+        }
     }
 
     private User createDefaultUser() {
