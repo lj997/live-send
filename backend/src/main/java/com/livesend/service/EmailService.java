@@ -20,6 +20,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 
@@ -65,7 +66,7 @@ public class EmailService {
         for (Note note : notes) {
             if (note.getContent() != null && !note.getContent().isEmpty()) {
                 String noteContent = note.getTitle() + "\n\n" + note.getContent();
-                DataSource dataSource = new ByteArrayDataSource(noteContent.getBytes("UTF-8"), "text/plain;charset=UTF-8");
+                DataSource dataSource = new ByteArrayDataSource(noteContent.getBytes(StandardCharsets.UTF_8), "text/plain;charset=UTF-8");
                 helper.addAttachment(note.getTitle() + ".txt", dataSource);
             }
         }
