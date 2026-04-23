@@ -15,7 +15,7 @@ public class UserService {
     private UserRepository userRepository;
 
     public User getDefaultUser() {
-        return userRepository.findById(1L)
+        return userRepository.findByUsername("default")
                 .orElseGet(() -> createDefaultUser());
     }
 
