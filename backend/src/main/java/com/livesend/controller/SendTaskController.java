@@ -132,4 +132,14 @@ public class SendTaskController {
             return ApiResponse.error(e.getMessage());
         }
     }
+
+    @PostMapping("/{id}/send-now")
+    public ApiResponse<Void> sendNow(@PathVariable Long id) {
+        try {
+            sendTaskService.sendNow(id);
+            return ApiResponse.success("邮件已发送", null);
+        } catch (Exception e) {
+            return ApiResponse.error("发送失败: " + e.getMessage());
+        }
+    }
 }

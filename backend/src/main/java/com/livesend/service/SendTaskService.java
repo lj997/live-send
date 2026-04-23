@@ -32,6 +32,9 @@ public class SendTaskService {
     @Autowired
     private CheckInRecordRepository checkInRecordRepository;
 
+    @Autowired
+    private EmailService emailService;
+
     public List<SendTask> getTasksByUser(Long userId) {
         return sendTaskRepository.findByUserId(userId);
     }
@@ -159,5 +162,26 @@ public class SendTaskService {
     public void markTaskCompleted(SendTask task) {
         task.setStatus(SendTask.TaskStatus.COMPLETED);
         sendTaskRepository.save(task);
+    }
+
+    @Transactional
+    public void sendNow(Long taskId) {
+        SendTask task = sendTaskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("任务不存在"));
+        
+        if (task.getStatus() == SendTask.TaskStatus.COMPLETED) {
+            throw new RuntimeException("该任务已完成，邮件已发送");
+        }
+        if (task.getStatus() == SendTask.TaskStatus.CANCELLED) {
+            throw new RuntimeException("该任务已取消，无法发送");
+        }
+
+        try {
+            emailService.sendEmailWithAttachments(task);
+            task.setStatus(SendTask.TaskStatus.COMPLETED);
+            sendTaskRepository.save(task);
+        } catch (Exception e) {
+            throw new RuntimeException("邮件发送失败: " + e.getMessage());
+        }
     }
 }

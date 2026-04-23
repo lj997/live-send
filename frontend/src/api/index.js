@@ -127,6 +127,9 @@ export default {
     },
     cancel(id) {
       return api.post(`/tasks/${id}/cancel`)
+    },
+    sendNow(id) {
+      return api.post(`/tasks/${id}/send-now`)
     }
   },
 

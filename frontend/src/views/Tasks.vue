@@ -195,6 +195,10 @@
               <el-icon><VideoPause /></el-icon>
               暂停
             </el-button>
+            <el-button size="small" type="warning" @click="sendTaskNow(task)">
+              <el-icon><Promotion /></el-icon>
+              立即发送
+            </el-button>
             <el-button size="small" type="danger" @click="cancelTask(task)">
               <el-icon><Close /></el-icon>
               取消
@@ -204,6 +208,10 @@
             <el-button size="small" type="primary" @click="resumeTask(task)">
               <el-icon><VideoPlay /></el-icon>
               恢复
+            </el-button>
+            <el-button size="small" type="warning" @click="sendTaskNow(task)">
+              <el-icon><Promotion /></el-icon>
+              立即发送
             </el-button>
             <el-button size="small" type="danger" @click="cancelTask(task)">
               <el-icon><Close /></el-icon>
@@ -378,6 +386,59 @@ const cancelTask = async (task) => {
   } catch (e) {
     if (e !== 'cancel') {
       ElMessage.error('操作失败')
+    }
+  }
+}
+
+const sendTaskNow = async (task) => {
+  const totalItems = (task.files?.length || 0) + (task.notes?.length || 0)
+  
+  try {
+    await ElMessageBox.confirm(
+      `
+        <div style="text-align: left;">
+          <p style="margin-bottom: 12px; font-weight: 600; color: #F56C6C;">
+            ⚠️ 重要提示
+          </p>
+          <p style="margin-bottom: 8px; color: #666; line-height: 1.6;">
+            确认要立即发送这个任务吗？
+          </p>
+          <ul style="margin: 12px 0; padding-left: 20px; color: #666; line-height: 1.8;">
+            <li><strong>任务名称:</strong> ${task.name}</li>
+            <li><strong>发送内容:</strong> ${totalItems} 项（${task.files?.length || 0} 个文件，${task.notes?.length || 0} 篇笔记）</li>
+            <li><strong>收件人:</strong> ${task.contacts?.length || 0} 位联系人</li>
+          </ul>
+          <p style="margin-top: 12px; color: #E6A23C; font-size: 13px;">
+            💡 此操作不可撤销，邮件发送后任务将标记为"已完成"
+          </p>
+        </div>
+      `,
+      '确认立即发送',
+      {
+        confirmButtonText: '确认发送',
+        cancelButtonText: '取消',
+        type: 'warning',
+        dangerouslyUseHTMLString: true,
+        confirmButtonClass: 'el-button--warning'
+      }
+    )
+    
+    try {
+      await api.tasks.sendNow(task.id)
+      ElMessage.success({
+        message: '邮件发送成功！任务已完成 💝',
+        type: 'success',
+        duration: 3000
+      })
+      loadData()
+    } catch (e) {
+      if (e.message !== 'cancel') {
+        ElMessage.error('发送失败，请稍后重试')
+      }
+    }
+  } catch (e) {
+    if (e !== 'cancel') {
+      console.error(e)
     }
   }
 }
